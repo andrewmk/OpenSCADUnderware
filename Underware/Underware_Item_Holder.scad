@@ -48,7 +48,7 @@ include <BOSL2/walls.scad>
 
 /* [Beta Feature - Slot Type] */
 //Multipoint in Beta - Please share feedback! How do you intend to mount the item holder to a surface such as Multipoint connections or DavidD's Multiconnect?
-Connection_Type = "Multiconnect"; // [Multipoint, Multiconnect, GOEWS]
+Connection_Type = "GOEWS"; // [Multipoint, Multiconnect, GOEWS]
 
 
 /* [Internal Dimensions] */
@@ -127,7 +127,7 @@ backPlateOnly = false;
 //Offset the multiconnect on-ramps to be between grid slots rather than on the slot
 onRampHalfOffset = true;
 //Change slot orientation, when enabled slots to come from the top of the back, when disabled slots come from the bottom
-Slot_From_Top = true;
+Slot_From_Top = false;
 //Distance between Multiconnect slots on the back (25mm is standard for MultiBoard)
 distanceBetweenSlots = 25;
 //Reduce the number of slots
@@ -145,7 +145,7 @@ onRampEnabled = false;
 //Frequency of slots for on-ramp. 1 = every slot; 2 = every 2 slots; etc.
 On_Ramp_Every_X_Slots = 1;
 //Distance from the back of the item holder to where the multiconnect stops (i.e., where the dimple is) (by mm)
-Multiconnect_Stop_Distance_From_Back = 13;
+Multiconnect_Stop_Distance_From_Back = 13.0;
 
 /* [Hidden] */
 Wall_Type = "Solid"; //["Hex","Solid"]
@@ -159,8 +159,8 @@ if(debugCutoutTool){
 //UNDERWARE SPECIFIC CODE
 //Underware Conversion
 //Depth and Height in the lateral version are switched to match the orientation of the item holder (vertical mounting vs. horizontal). This sets them back so the same code (vertical) is used between the two
-internalDepth = Internal_Height;
-internalHeight = Internal_Depth;
+internalDepth = Internal_Depth;
+internalHeight = Internal_Height;
 internalWidth = Internal_Width;
 //Due to horizontal mounting, do not allow users to do on-ramps every slot unless half offset is enabled
 onRampEveryXSlots = 
@@ -356,14 +356,15 @@ module makebackPlate(maxBackWidth, backHeight, distanceBetweenSlots, backThickne
 } 
   
     if(Connection_Type == "GOEWS"){
-        echo("GOEWS")
-      union() {
+    difference() {  
+    union() {       
         translate(v = backPlateTranslation) 
         cuboid(size = [trueWidth, backThickness, trueBackHeight], 
                rounding=edgeRounding, 
                except_edges=BACK, 
                anchor=FRONT+BOT
               );
+
         //Loop through slots and center on the item
         //Note: I kept doing math until it looked right. It's possible this can be simplified.
         if(slotCount % 2 == 1){
@@ -400,9 +401,29 @@ module makebackPlate(maxBackWidth, backHeight, distanceBetweenSlots, backThickne
 
             }
         }
+    };
+    if(slotCount % 2 == 1){
+            //odd number of slots, place one on x=0
+    translate([0, 1, trueBackHeight + 0.46 - slotStopFromBack + 11.24])
+        rotate([90, 0, 0])
+        cylinder(h = 5, r = 7, $fn = 256);
     }
-}
     
+    remainingSlots = (slotCount % 2 == 1) ? (slotCount - 1) : slotCount; //now place this many slots offset from center
+        initialLoc = (slotCount % 2 == 1) ? 1 : 0.5;  // how far from center to start the incrementor?
+        for (slotLoc = [initialLoc:2:remainingSlots]) {
+            // place a slot left and right of center.
+                translate([slotLoc * distanceBetweenSlots, 1, trueBackHeight + 0.46 - slotStopFromBack + 11.24])
+        rotate([90, 0, 0])
+        cylinder(h = 5, r = 7, $fn = 256);
+           
+                translate([slotLoc * distanceBetweenSlots * -1, 1, trueBackHeight + 0.46 - slotStopFromBack + 11.24])
+        rotate([90, 0, 0])
+        cylinder(h = 5, r = 7, $fn = 256);
+        }
+    
+    }
+ }   
 }
 
 // GOEWS
@@ -421,9 +442,9 @@ module GOEWSCleatTool(totalHeight) {
             rotate([45, 0, 0])
                 translate([0, 5, 0])
                     cube([35.2, 10, 15]);
-        translate([0, -0.01, 2.5])
+        translate([0, -0.005, 2.964])
             rotate([90, 0, 0])
-                cylinder(h = 6, r = 9.5);
+                cylinder(h = 6, r = 9.5, $fn = 256);
     }
 }
 
