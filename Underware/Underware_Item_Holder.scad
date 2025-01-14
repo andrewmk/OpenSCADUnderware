@@ -34,6 +34,9 @@ Change Log:
     - Thanks @SnazzyGreenWarrior!
 - 2025-01-11
     - Logic changes on slot placement
+- 2025-01-14
+    - Added GOEWS cleats option (@andrew_3d)
+
 
 Notes:
 - Slot test fit - For a slot test fit, set the following parameters
