@@ -48,7 +48,7 @@ include <BOSL2/walls.scad>
 
 /* [Beta Feature - Slot Type] */
 //Multipoint in Beta - Please share feedback! How do you intend to mount the item holder to a surface such as Multipoint connections or DavidD's Multiconnect?
-Connection_Type = "Multiconnect"; // [Multipoint, Multiconnect]
+Connection_Type = "Multiconnect"; // [Multipoint, Multiconnect, GOEWS]
 
 
 /* [Internal Dimensions] */
@@ -203,6 +203,17 @@ union(){
             slotStopFromBack = Multiconnect_Stop_Distance_From_Back
             );
     }
+    if(Connection_Type == "GOEWS"){
+
+        makebackPlate(
+            maxBackWidth = totalWidth, 
+            backHeight = totalHeight, 
+            distanceBetweenSlots = 42,
+            backThickness=3,
+            enforceMaxWidth=true,
+            slotStopFromBack = 11.24
+            );
+    }
 }
 
 //Create Basket
@@ -273,6 +284,7 @@ module makebackPlate(maxBackWidth, backHeight, distanceBetweenSlots, backThickne
     //every slot is a multiple of distanceBetweenSlots. The default of 25 accounts for the rail, and the ~5mm to either side.
     //first calculate the starting slot location based on the number of slots.
     slotCount = floor(maxBackWidth/distanceBetweenSlots) - subtractedSlots;
+    echo(slotCount=slotCount);
     // only use maxBackWidth if we have to, otherwise scale down by slots.
     trueWidth = (enforceMaxWidth) ? maxBackWidth : slotCount * distanceBetweenSlots;
     trueBackHeight = max(backHeight, 25);
@@ -280,6 +292,8 @@ module makebackPlate(maxBackWidth, backHeight, distanceBetweenSlots, backThickne
     
     //slot count calculates how many slots can fit on the back. Based on internal width for buffer. 
     //slot width needs to be at least the distance between slot for at least 1 slot to generate
+    
+    if(Connection_Type != "GOEWS"){
     yrot(Slot_From_Top ? 180 : 0) up(Slot_From_Top ? -trueBackHeight : 0)
     difference() {
         translate(v = backPlateTranslation) 
@@ -303,6 +317,7 @@ module makebackPlate(maxBackWidth, backHeight, distanceBetweenSlots, backThickne
                 if(Connection_Type == "Multiconnect"){
                     multiConnectSlotTool(totalHeight);
                 }
+
             }
         }
         remainingSlots = (slotCount % 2 == 1) ? (slotCount - 1) : slotCount; //now place this many slots offset from center
@@ -321,6 +336,7 @@ module makebackPlate(maxBackWidth, backHeight, distanceBetweenSlots, backThickne
                 if(Connection_Type == "Multiconnect"){
                     multiConnectSlotTool(totalHeight);
                 }
+
             }
             translate(v = [slotLoc * distanceBetweenSlots * -1,
                            -2.35 + slotDepthMicroadjustment,
@@ -333,9 +349,82 @@ module makebackPlate(maxBackWidth, backHeight, distanceBetweenSlots, backThickne
                 if(Connection_Type == "Multiconnect"){
                     multiConnectSlotTool(totalHeight);
                 }
+
             }
         }
-    }   
+    }
+} 
+  
+    if(Connection_Type == "GOEWS"){
+        echo("GOEWS")
+      union() {
+        translate(v = backPlateTranslation) 
+        cuboid(size = [trueWidth, backThickness, trueBackHeight], 
+               rounding=edgeRounding, 
+               except_edges=BACK, 
+               anchor=FRONT+BOT
+              );
+        //Loop through slots and center on the item
+        //Note: I kept doing math until it looked right. It's possible this can be simplified.
+        if(slotCount % 2 == 1){
+            //odd number of slots, place one on x=0
+            translate(v = [0,
+                           -3,
+                           trueBackHeight-slotStopFromBack
+                          ])
+                {
+                     GOEWSCleatTool(totalHeight);
+            }
+        }
+        remainingSlots = (slotCount % 2 == 1) ? (slotCount - 1) : slotCount; //now place this many slots offset from center
+        initialLoc = (slotCount % 2 == 1) ? 1 : 0.5;  // how far from center to start the incrementor?
+        for (slotLoc = [initialLoc:2:remainingSlots]) {
+            // place a slot left and right of center.
+            echo("slotLoc", slotLoc)
+            translate(v = [slotLoc * distanceBetweenSlots,
+                           -3,
+                           trueBackHeight-slotStopFromBack
+                          ])
+                {
+
+                    GOEWSCleatTool(totalHeight);
+
+            }
+            translate(v = [slotLoc * distanceBetweenSlots * -1,
+                           -3,
+                           trueBackHeight-slotStopFromBack
+                          ])
+                {
+
+                    GOEWSCleatTool(totalHeight);
+
+            }
+        }
+    }
+}
+    
+}
+
+// GOEWS
+module GOEWSCleatTool(totalHeight) {
+    difference() {
+        translate(v = [0,0,0]) 
+            rotate(a = [180,0,0]) 
+                linear_extrude(height = 13.15) 
+                    let (cleatProfile = [[0,0],[15.1,0],[17.6,2.5],[15.1,5],[0,5]])
+                    union(){
+                        polygon(points = cleatProfile);
+                        mirror([1,0,0])
+                            polygon(points = cleatProfile);
+                    };
+        translate([-17.6, -8, -26.3])
+            rotate([45, 0, 0])
+                translate([0, 5, 0])
+                    cube([35.2, 10, 15]);
+        translate([0, -0.01, 2.5])
+            rotate([90, 0, 0])
+                cylinder(h = 6, r = 9.5);
+    }
 }
 
 //Create Slot Tool
